@@ -1,12 +1,7 @@
-import Sequelize from 'sequelize';
+import pg from 'pg';
 
-const sequelize = new Sequelize('postgres://postgres@localhost:5432/nodestore');
+import { __connectionString__ } from './constants.js';
 
-(async function init() {
-  try {
-    await sequelize.authenticate();
-    console.log('Connection has been established successfully.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
-})();
+const pool = new pg.Pool({ connectionString: __connectionString__ });
+
+export const client = await pool.connect();

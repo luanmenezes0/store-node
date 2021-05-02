@@ -1,5 +1,6 @@
 import { readProductsFromFile, writeProductsToFile } from '../db/db.js';
 import Cart from './cart.js';
+import { client } from '../util/database.js';
 
 export default class Product {
   constructor(id, title, imageUrl, description, price) {
@@ -41,8 +42,12 @@ export default class Product {
   }
 
   static async fetchAll() {
-    const products = await readProductsFromFile();
-    return products;
+    /* const products = await readProductsFromFile();
+    return products; */
+
+    const result = await client.query('SELECT * FROM products');
+    client.release();
+    return result.rows;
   }
 
   static async findById(id) {
