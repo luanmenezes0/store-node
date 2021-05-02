@@ -1,5 +1,3 @@
-import { readProductsFromFile, writeProductsToFile } from '../db/db.js';
-import Cart from './cart.js';
 import { client } from '../util/database.js';
 
 export default class Product {
@@ -11,48 +9,27 @@ export default class Product {
     this.price = price;
   }
 
-  async save() {
-    const products = await readProductsFromFile();
-
-    if (this.id) {
-      const existingProductIndex = products.findIndex((prod) => prod.id === this.id);
-      const updatedProducts = [...products];
-      updatedProducts[existingProductIndex] = this;
-
-      await writeProductsToFile(updatedProducts);
-    } else {
-      this.id = Math.random().toString();
-      products.push(this);
-
-      await writeProductsToFile(products);
-    }
-  }
-
-  static async deleteById(id) {
-    const products = await readProductsFromFile();
-    const product = products.find((prod) => prod.id === id);
-    const updatedProducts = products.filter((prod) => prod.id !== id);
-
-    try {
-      await writeProductsToFile(updatedProducts);
-      Cart.deleteProduct(id, product.price);
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
   static async fetchAll() {
-    /* const products = await readProductsFromFile();
-    return products; */
-
     const result = await client.query('SELECT * FROM products');
-    client.release();
     return result.rows;
   }
 
   static async findById(id) {
-    const products = await readProductsFromFile();
-    const product = products.find((p) => p.id === id);
-    return product;
+    const queryString = 'SELECT * FROM products WHERE products.id = ($1)';
+    const { rows } = await client.query(queryString, [id]);
+
+    return rows[0];
+  }
+
+  static async deleteById(id) {
+    const queryString = 'DELETE FROM products WHERE products.id = ($1)';
+    await client.query(queryString, [id]);
+  }
+
+  async save() {
+    const queryText =
+      'INSERT INTO products (title, price, description, "imageUrl") \
+       VALUES ($1, $2, $3, $4) ';
+    return await client.query(queryText, [this.title, this.price, this.description, this.imageUrl]);
   }
 }

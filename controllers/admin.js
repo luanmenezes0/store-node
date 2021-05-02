@@ -15,8 +15,12 @@ export async function postAddProduct(req, res) {
 
   const product = new Product(null, title, imageUrl, description, price);
 
-  await product.save();
-  res.redirect('/');
+  try {
+    await product.save();
+    res.redirect('/');
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 export async function getEditProduct(req, res) {
