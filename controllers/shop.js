@@ -2,7 +2,7 @@ import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 
 export async function getProducts(req, res) {
-  const products = await Product.fetchAll();
+  const products = await Product.findAll();
 
   res.render('shop/product-list', {
     prods: products,
@@ -14,17 +14,17 @@ export async function getProducts(req, res) {
 export async function getProduct(req, res) {
   const prodId = req.params.productId;
 
-  const product = await Product.findById(prodId);
+  const product = await Product.findAll({ where: { id: prodId } });
 
   res.render('shop/product-detail', {
-    product: product,
-    pageTitle: product.title,
+    product: product[0],
+    pageTitle: product[0].title,
     path: '/products',
   });
 }
 
 export async function getIndex(req, res) {
-  const products = await Product.fetchAll();
+  const products = await Product.findAll();
 
   res.render('shop/index', {
     prods: products,
@@ -34,28 +34,29 @@ export async function getIndex(req, res) {
 }
 
 export async function getCart(req, res) {
-  Cart.getCartProducts(async (cart) => {
-    const products = await Product.fetchAll();
+  const cart = await req.user.getCart();
+  const products = await cart.getProducts();
 
-    const cartProducts = [];
-    for (const product of products) {
-      const cartProductData = cart.products.find((prod) => prod.id === product.id);
-      if (cartProductData) {
-        cartProducts.push({ productData: product, qty: cartProductData.qty });
-      }
-    }
-    res.render('shop/cart', {
-      path: '/cart',
-      pageTitle: 'Your Cart',
-      products: cartProducts,
-    });
+  console.log(products);
+
+  res.render('shop/cart', {
+    path: '/cart',
+    pageTitle: 'Your Cart',
+    products,
   });
 }
 
 export async function postCart(req, res) {
   const prodId = req.body.productId;
-  const product = await Product.findById(prodId);
-  Cart.addProduct(prodId, product.price);
+
+  const cart = await req.user.getCart();
+  const cartProduct = await cart.getProducts({ where: { id: prodId } });
+  const product = await Product.findByPk(prodId);
+  console.log(product[0]);
+
+  if (!cartProduct.length) {
+    await cart.addProduct(product, { through: { quantity: 1 } });
+  } 
 
   res.redirect('/cart');
 }

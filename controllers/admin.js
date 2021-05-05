@@ -11,12 +11,12 @@ export function getAddProduct(req, res) {
 export async function postAddProduct(req, res) {
   const {
     body: { title, imageUrl, price, description },
+    user,
   } = req;
 
-  const product = new Product(null, title, imageUrl, description, price);
-
   try {
-    await product.save();
+    await user.createProduct({ title, price, description, imageUrl });
+
     res.redirect('/');
   } catch (err) {
     console.log(err);
@@ -25,13 +25,14 @@ export async function postAddProduct(req, res) {
 
 export async function getEditProduct(req, res) {
   const editMode = req.query.edit;
+
   if (!editMode) {
     return res.redirect('/');
   }
 
   const prodId = req.params.productId;
 
-  const product = await Product.findById(prodId);
+  const product = await Product.findByPk(prodId);
 
   if (!product) {
     return res.redirect('/');
@@ -46,24 +47,24 @@ export async function getEditProduct(req, res) {
 }
 
 export async function postEditProduct(req, res) {
-  const prodId = req.body.productId;
-  const updatedTitle = req.body.title;
-  const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
-  const updatedDesc = req.body.description;
-  const updatedProduct = new Product(
-    prodId,
-    updatedTitle,
-    updatedImageUrl,
-    updatedDesc,
-    updatedPrice,
-  );
-  await updatedProduct.save();
+  const {
+    body: { productId, title, imageUrl, price, description },
+  } = req;
+
+  const product = await Product.findByPk(productId);
+
+  product.title = title;
+  product.imageUrl = imageUrl;
+  product.price = price;
+  product.description = description;
+
+  await product.save();
+
   res.redirect('/admin/products');
 }
 
 export async function getProducts(req, res) {
-  const products = await Product.fetchAll();
+  const products = await req.user.getProducts();
 
   res.render('admin/products', {
     prods: products,
@@ -72,8 +73,11 @@ export async function getProducts(req, res) {
   });
 }
 
-export function postDeleteProduct(req, res) {
+export async function postDeleteProduct(req, res) {
   const prodId = req.body.productId;
-  Product.deleteById(prodId);
+
+  const product = await Product.findByPk(prodId);
+
+  await product.destroy();
   res.redirect('/admin/products');
 }
