@@ -1,7 +1,5 @@
-import pg from 'pg';
+import Sequelize from 'sequelize';
 
 import { __connectionString__ } from './constants.js';
 
-const pool = new pg.Pool({ connectionString: __connectionString__ });
-
-export const client = await pool.connect();
+export const sequelize = new Sequelize(__connectionString__);
